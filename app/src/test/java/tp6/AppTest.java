@@ -17,7 +17,7 @@ class AppTest {
     @Test
     public void testPersistence() {
     Club club = new Club();
-    club.setFabricant("un nom");
+    club.setFabricant("Adidos");
     club.setPoids(10.3);
         
     EntityManagerImpl em = new EntityManagerImpl();
@@ -27,13 +27,13 @@ class AppTest {
     @Test
     public void testFind() throws SQLException {
 
-    Club club = = new Club();
-    club.setFabricant("un  nom");
+    Club club = new Club();
+    club.setFabricant("Adidos");
     club.setPoids(10.3);
 
     EntityManagerImpl em = new EntityManagerImpl();
     Club trouve = em.<Club> find(Club.class, club.getId());
-    Assert.assertEquals(club.getFabricant(), trouve.getFabricant());
+    assertEquals(club.getFabricant(), trouve.getFabricant());
 }
 
 }
