@@ -1,4 +1,4 @@
-package org.ema.imanip;
+package tp6;
 
 import java.lang.reflect.Method;
 import org.objectweb.asm.ClassReader;

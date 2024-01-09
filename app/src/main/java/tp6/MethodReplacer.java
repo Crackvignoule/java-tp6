@@ -1,4 +1,4 @@
-package org.ema.imanip;
+package tp6;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;

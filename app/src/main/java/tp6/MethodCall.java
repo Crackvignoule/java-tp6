@@ -1,4 +1,4 @@
-package org.ema.imanip;
+package tp6;
 
 
 public class MethodCall {
