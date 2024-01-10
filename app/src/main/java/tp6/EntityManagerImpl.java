@@ -78,10 +78,11 @@ public <T> T find(Class<T> entityClass, Object primaryKey) {
         Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
         PreparedStatement statement = connection.prepareStatement("SELECT * FROM Club WHERE id = ?");
         statement.setObject(1, primaryKey);
-        Club club = new Club();
+        Club club = null;
 
         ResultSet resultSet = statement.executeQuery();
         if (resultSet.next()) {
+            club = new Club();
             club.setId(resultSet.getLong("id"));
             club.setFabricant(resultSet.getString("fabricant"));
             club.setPoids(resultSet.getDouble("poids"));
