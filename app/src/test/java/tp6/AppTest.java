@@ -3,6 +3,8 @@
  */
 package tp6;
 
+import org.hsqldb.jdbc.JDBCDataSource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +24,10 @@ class AppTest {
         
     EntityManagerImpl em = new EntityManagerImpl();
     em.persist(club);
- }
+    
+    Club trouve = em.<Club> find(Club.class, club.getId());
+    assertEquals(club.getFabricant(), trouve.getFabricant());
+}
 
     @Test
     public void testFind() throws SQLException {
@@ -32,6 +37,8 @@ class AppTest {
     club.setPoids(10.3);
 
     EntityManagerImpl em = new EntityManagerImpl();
+    em.persist(club);
+
     Club trouve = em.<Club> find(Club.class, club.getId());
     assertEquals(club.getFabricant(), trouve.getFabricant());
 }

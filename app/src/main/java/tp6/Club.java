@@ -1,6 +1,8 @@
 package tp6;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Version;
 
@@ -9,6 +11,10 @@ public class Club {
 
     @Id
     private Long id;
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     @Version
     private int version;
