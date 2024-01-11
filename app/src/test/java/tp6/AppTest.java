@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 
 class AppTest {
@@ -31,6 +32,31 @@ class AppTest {
     public void testFind() throws SQLException {
     Club trouve = em.<Club> find(Club.class, club.getId());
     assertEquals(club.getFabricant(), trouve.getFabricant());
+}
+
+    @Test
+    public void testMerge() throws SQLException {
+    club.setFabricant("Pouet");
+    club.setPoids(21.3);
+    em.merge(club);
+    
+    // Fetch the updated club from the database
+    Club updatedClub = em.<Club> find(Club.class, club.getId());
+
+    // Verify that the fabricant field was updated
+    assertEquals("Pouet", updatedClub.getFabricant(), "Fabricant field should be updated");
+    
+    try {
+        // Access the version field using reflection
+        Field versionField = updatedClub.getClass().getDeclaredField("version");
+        versionField.setAccessible(true);
+        int version = (int) versionField.get(updatedClub);
+        
+        // Verify that version was incremented
+        assertEquals(1, version, "Version field should be incremented");
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+        e.printStackTrace();
+    }
 }
 
     @Test
