@@ -43,10 +43,13 @@ public void persist(Object entity) {
         Club club = (Club) entity;
         connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
         statement = connection.prepareStatement("INSERT INTO " + class_name + " (version, fabricant, poids) VALUES (?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+        
         statement.setInt(1, 1);
         statement.setString(2, club.getFabricant());
         statement.setDouble(3, club.getPoids());
+        
         statement.executeUpdate();
+
         try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
             if (generatedKeys.next()) {
                 try {
@@ -73,28 +76,15 @@ public <T> T merge(T entity) {
         Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
         PreparedStatement statement = connection.prepareStatement("UPDATE " + class_name + " SET version = ?, poids = ?, fabricant = ? WHERE id = ?");
         
-        Field versionField = entity.getClass().getDeclaredField("version");
-        versionField.setAccessible(true);
-        int version = (int) versionField.get(entity) + 1;
-        versionField.set(entity, version);
-        statement.setInt(1, version);
-
-        Field poidsField = entity.getClass().getDeclaredField("poids");
-        poidsField.setAccessible(true);
-        statement.setDouble(2, (Double) poidsField.get(entity));
-
-        Field fabricantField = entity.getClass().getDeclaredField("fabricant");
-        fabricantField.setAccessible(true);
-        statement.setString(3, (String) fabricantField.get(entity));
-
-        Field idField = entity.getClass().getDeclaredField("id");
-        idField.setAccessible(true);
-        statement.setLong(4, (Long) idField.get(entity));
+        setPreparedStatementField(statement, entity, "version", 1);
+        setPreparedStatementField(statement, entity, "poids", 2);
+        setPreparedStatementField(statement, entity, "fabricant", 3);
+        setPreparedStatementField(statement, entity, "id", 4);
 
         statement.executeUpdate();
 
         return entity;
-    } catch (SQLException | NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
+    } catch (SQLException | NoSuchFieldException | IllegalAccessException e) {
         throw new RuntimeException(e);
     }
 }
@@ -130,6 +120,19 @@ public <T> T find(Class<T> entityClass, Object primaryKey) {
     } catch (SQLException | NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
         throw new RuntimeException(e);
     }
+}
+
+private void setPreparedStatementField(PreparedStatement statement, Object entity, String fieldName, int index) throws NoSuchFieldException, IllegalAccessException, SQLException {
+    Field field = entity.getClass().getDeclaredField(fieldName);
+    field.setAccessible(true);
+
+    // if fieldname == version, increment version
+    if (fieldName.equals("version")) {
+        int version = (int) field.get(entity) + 1;
+        field.set(entity, version);
+    }
+
+    statement.setObject(index, field.get(entity));
 }
 
 @Override
