@@ -27,7 +27,7 @@ import javax.persistence.metamodel.Metamodel;
 
 // TODO Change all references to Club and its fields so that they are generic and can be used for any entity
 // TODO Clean the code, ex: create functions to simplify code especially for the reflection parts
-// TODO retrieve automatically the index of version and others...
+// TODO Generic function for merge and find
 // NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
 
 public class EntityManagerImpl implements EntityManager {
@@ -92,7 +92,7 @@ public void persist(Object entity) {
         
         // Prepare the statement
         statement = connection.prepareStatement(sql.toString(), PreparedStatement.RETURN_GENERATED_KEYS);
-            
+
         // Set the values for the fields
         int paramIndex = 1;  // Start at 1 for the PreparedStatement parameters
         for (Field field : fields) {
@@ -105,7 +105,7 @@ public void persist(Object entity) {
                 paramIndex++;
             }
         }
-        
+
         statement.executeUpdate();
 
         try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
