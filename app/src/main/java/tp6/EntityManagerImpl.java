@@ -1,4 +1,9 @@
 // Author : Killian PAVY
+// TODO Clean & Refactor the code to avoid code duplication (especially for the SQL queries)
+// TODO Add comments
+// TODO Try to get rid of all the unused method of EntityManager
+// NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
+
 package tp6;
 
 import java.lang.reflect.Field;
@@ -9,6 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -28,18 +34,26 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 
-// TODO Change all references to Club and its fields so that they are generic and can be used for any entity
-// TODO Clean the code, ex: create functions to simplify code especially for the reflection parts
-// TODO Refactor the code to avoid code duplication (especially for the SQL queries)
-// TODO Generic function for find
-// TODO Add comments
-// NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
-
 public class EntityManagerImpl implements EntityManager {
 
 private static final String DB_URL = "jdbc:hsqldb:mem:mymemdb";
 private static final String DB_USER = "SA";
 private static final String DB_PASSWORD = "";
+private static final Map<Class<?>, String> SQL_TYPE_MAP = new HashMap<>();
+
+static {
+    SQL_TYPE_MAP.put(int.class, "INT");
+    SQL_TYPE_MAP.put(Integer.class, "INT");
+    SQL_TYPE_MAP.put(long.class, "BIGINT");
+    SQL_TYPE_MAP.put(Long.class, "BIGINT");
+    SQL_TYPE_MAP.put(double.class, "DOUBLE");
+    SQL_TYPE_MAP.put(Double.class, "DOUBLE");
+    SQL_TYPE_MAP.put(String.class, "VARCHAR(255)");
+}
+
+private String getSqlType(Class<?> type) {
+    return SQL_TYPE_MAP.get(type);
+}
 
 private Field getAccessibleField(Class<?> entityClass, String fieldName) throws NoSuchFieldException {
     Field field = entityClass.getDeclaredField(fieldName);
@@ -60,21 +74,6 @@ private String processFields(Field[] fields, String delimiter, boolean includeTy
     return joiner.toString();
 }
 
-private String getSqlType(Class<?> type) {
-    if (type == int.class || type == Integer.class) {
-        return "INT";
-    } else if (type == long.class || type == Long.class) {
-        return "BIGINT";
-    } else if (type == double.class || type == Double.class) {
-        return "DOUBLE";
-    } else if (type == String.class) {
-        return "VARCHAR(255)";
-    } else {
-        // You can add more types as needed
-        // For types that can't be mapped to SQL, throw an exception or return a default type
-        throw new IllegalArgumentException("Unsupported type: " + type);
-    }
-}
 
 public void persist(Object entity) {
     try {
