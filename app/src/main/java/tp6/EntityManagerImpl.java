@@ -2,10 +2,12 @@
 package tp6;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +35,11 @@ import javax.persistence.metamodel.Metamodel;
 // NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
 
 public class EntityManagerImpl implements EntityManager {
-    
+
+private static final String DB_URL = "jdbc:hsqldb:mem:mymemdb";
+private static final String DB_USER = "SA";
+private static final String DB_PASSWORD = "";
+
 private String getSqlType(Class<?> type) {
     if (type == int.class || type == Integer.class) {
         return "INT";
@@ -54,7 +60,7 @@ public void persist(Object entity) {
     try {
         // Create the table if it does not exist
         String class_name = entity.getClass().getSimpleName();
-        Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
         
         // Build the SQL query for creating the table based on the entity's fields
         StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ")
@@ -133,7 +139,7 @@ public void persist(Object entity) {
 public <T> T merge(T entity) {
     try {
         String className = entity.getClass().getSimpleName();
-        Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
 
         Field[] fields = entity.getClass().getDeclaredFields();
         StringBuilder sql = new StringBuilder("UPDATE " + className + " SET ");
@@ -175,49 +181,46 @@ public <T> T merge(T entity) {
 
 public <T> T find(Class<T> entityClass, Object primaryKey) {
     try {
-        String class_name = entityClass.getSimpleName();
-        Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
-        PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + class_name + " WHERE id = ?");
+        String className = entityClass.getSimpleName();
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+        String sql = "SELECT * FROM " + className + " WHERE id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
         statement.setObject(1, primaryKey);
-        Club club = null;
 
         ResultSet resultSet = statement.executeQuery();
-        if (resultSet.next()) {
-            club = new Club();
-
-            Field versionField = club.getClass().getDeclaredField("version");
-            versionField.setAccessible(true);
-            versionField.set(club, resultSet.getInt("version"));
-            
-            try {
-                    Field idField = club.getClass().getDeclaredField("id");
-                    idField.setAccessible(true);
-                    idField.set(club, resultSet.getLong("id"));
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            club.setFabricant(resultSet.getString("fabricant"));
-            club.setPoids(resultSet.getDouble("poids"));
+        if (!resultSet.next()) {
+            return null;
         }
-        return (T) club;
-        
-    } catch (SQLException | NoSuchFieldException | IllegalAccessException e) {
+
+        T entity = entityClass.getDeclaredConstructor().newInstance();
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        for (int i = 1; i <= metaData.getColumnCount(); i++) {
+            String columnName = metaData.getColumnName(i);
+            Object columnValue = resultSet.getObject(i);
+            Field field = entityClass.getDeclaredField(columnName.toLowerCase());
+            field.setAccessible(true);
+            field.set(entity, columnValue);
+        }
+
+        return entity;
+    } catch (SQLException | NoSuchFieldException | IllegalAccessException | InstantiationException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
         throw new RuntimeException(e);
     }
 }
 
-private void setPreparedStatementField(PreparedStatement statement, Object entity, String fieldName, int index) throws NoSuchFieldException, IllegalAccessException, SQLException {
-    Field field = entity.getClass().getDeclaredField(fieldName);
-    field.setAccessible(true);
+// private void setPreparedStatementField(PreparedStatement statement, Object entity, String fieldName, int index) throws NoSuchFieldException, IllegalAccessException, SQLException {
+//     Field field = entity.getClass().getDeclaredField(fieldName);
+//     field.setAccessible(true);
 
-    // if fieldname == version, increment version
-    if (fieldName.equals("version")) {
-        int version = (int) field.get(entity) + 1;
-        field.set(entity, version);
-    }
+//     // if fieldname == version, increment version
+//     if (fieldName.equals("version")) {
+//         int version = (int) field.get(entity) + 1;
+//         field.set(entity, version);
+//     }
 
-    statement.setObject(index, field.get(entity));
-}
+//     statement.setObject(index, field.get(entity));
+// }
 
 @Override
 public void remove(Object entity) {
