@@ -27,7 +27,9 @@ import javax.persistence.metamodel.Metamodel;
 
 // TODO Change all references to Club and its fields so that they are generic and can be used for any entity
 // TODO Clean the code, ex: create functions to simplify code especially for the reflection parts
-// TODO Generic function for merge and find
+// TODO Refactor the code to avoid code duplication (especially for the SQL queries)
+// TODO Generic function for find
+// TODO Add comments
 // NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
 
 public class EntityManagerImpl implements EntityManager {
@@ -130,18 +132,38 @@ public void persist(Object entity) {
 
 public <T> T merge(T entity) {
     try {
-        String class_name = entity.getClass().getSimpleName();
+        String className = entity.getClass().getSimpleName();
         Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:mymemdb", "SA", "");
-        PreparedStatement statement = connection.prepareStatement("UPDATE " + class_name + " SET version = ?, poids = ?, fabricant = ? WHERE id = ?");
-        
-        setPreparedStatementField(statement, entity, "version", 1);
-        setPreparedStatementField(statement, entity, "poids", 2);
-        setPreparedStatementField(statement, entity, "fabricant", 3);
-        setPreparedStatementField(statement, entity, "id", 4);
-        // Field[] fields = entity.getClass().getDeclaredFields();
-        // for (int i = 0; i < fields.length; i++) {
-        //     setPreparedStatementField(statement, entity, fields[i].getName(), i + 1);
-        // }
+
+        Field[] fields = entity.getClass().getDeclaredFields();
+        StringBuilder sql = new StringBuilder("UPDATE " + className + " SET ");
+
+        int i = 1;
+        for (Field field : fields) {
+            if (!field.getName().equals("id")) {
+                if (field.getName().equals("version")) {
+                    field.setAccessible(true);
+                    int version = field.getInt(entity);
+                    field.setInt(entity, version + 1);  // Increment version
+                }
+                sql.append(field.getName()).append(" = ?, ");
+            }
+        }
+        sql.delete(sql.length() - 2, sql.length());  // Remove the last comma
+        sql.append(" WHERE id = ?");
+
+        PreparedStatement statement = connection.prepareStatement(sql.toString());
+
+        for (Field field : fields) {
+            if (!field.getName().equals("id")) {
+                field.setAccessible(true);
+                statement.setObject(i, field.get(entity));
+                i++;
+            }
+        }
+        Field idField = entity.getClass().getDeclaredField("id");
+        idField.setAccessible(true);
+        statement.setObject(i, idField.get(entity));
 
         statement.executeUpdate();
 
