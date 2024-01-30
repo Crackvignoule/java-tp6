@@ -1,7 +1,4 @@
 // Author : Killian PAVY
-// TODO Clean & Refactor the code to avoid code duplication (especially for the SQL queries)
-// TODO Add comments
-// TODO Try to get rid of all the unused method of EntityManager
 // NOTE: I tried to use abstract to avoid implementing all the methods but it did not work because we need to instanciate the class in the tests
 
 package tp6;
